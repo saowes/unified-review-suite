@@ -69,13 +69,15 @@ if (-not $SkipHooks) {
     Copy-Item -Force $hookDst $bak
     $existing = Get-Content $hookDst -Raw | ConvertFrom-Json
     if (-not $existing.hooks) { $existing | Add-Member -NotePropertyName hooks -NotePropertyValue ([pscustomobject]@{}) -Force }
-    $existingEdits = @()
-    if ($existing.hooks.PSObject.Properties.Name -contains "afterFileEdit") { $existingEdits = @($existing.hooks.afterFileEdit) }
-    $prompts = $existingEdits | ForEach-Object { $_.prompt }
-    foreach ($entry in @($ours.hooks.afterFileEdit)) {
-      if ($prompts -notcontains $entry.prompt) { $existingEdits += $entry }
+    foreach ($evt in $ours.hooks.PSObject.Properties.Name) {
+      $merged = @()
+      if ($existing.hooks.PSObject.Properties.Name -contains $evt) { $merged = @($existing.hooks.$evt) }
+      $sigs = $merged | ForEach-Object { ($_ | ConvertTo-Json -Compress -Depth 20) }
+      foreach ($entry in @($ours.hooks.$evt)) {
+        if ($sigs -notcontains ($entry | ConvertTo-Json -Compress -Depth 20)) { $merged += $entry }
+      }
+      $existing.hooks | Add-Member -NotePropertyName $evt -NotePropertyValue $merged -Force
     }
-    $existing.hooks | Add-Member -NotePropertyName afterFileEdit -NotePropertyValue $existingEdits -Force
     ($existing | ConvertTo-Json -Depth 20) | Set-Content -Encoding UTF8 $hookDst
     Write-Host "  hooks  -> merged into existing hooks.json (backup: $bak)"
   }

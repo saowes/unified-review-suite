@@ -8,6 +8,14 @@
         "matcher": "Write",
         "timeout": 15
       }
+    ],
+    "beforeShellExecution": [
+      {
+        "type": "prompt",
+        "prompt": "You are the unified-review-suite pre-commit gate. A shell command is about to run. Act ONLY if it creates a git commit (e.g. matches `git commit`); for anything else return {\"permission\":\"allow\"}.\n\nFor a commit, enforce a BLOCKING review checkpoint:\n1. Decide whether a unified review (the review-orchestrator skill or the /review command) has ALREADY been completed in THIS session covering the changes being committed, AND that no unresolved P0 (blocking) or P1 (important) issues remain.\n2. If a clean review was completed (no open P0/P1): return {\"permission\":\"allow\"}.\n3. Otherwise — no review was done, unresolved P0/P1 remain, or you cannot confirm it — return {\"permission\":\"deny\"} with:\n   - user_message: tell the user the commit was blocked by the unified-review-suite gate; run /review (or the review-orchestrator skill), resolve all P0/P1 issues, then commit again. Mention they can bypass by committing in an external terminal if truly necessary.\n   - agent_message: instruct the agent to run /review now, fix every P0/P1 issue, then retry the commit.\n\nDefault to deny when uncertain — this gate is intentionally aggressive to prevent committing unreviewed changes. Hook input: $ARGUMENTS",
+        "matcher": "git commit",
+        "timeout": 30
+      }
     ]
   }
 }

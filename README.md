@@ -10,7 +10,7 @@
 | 编排伞技能 | `skills/review-orchestrator/` | 唯一入口；识别目标 → 路由 → 串流水线 → 汇总报告 |
 | 文档审查技能 | `skills/document-review-sync-check/` | L1 引用存在性 / L2 参数一致性 / L3 反向传导 |
 | 统一规则 | `rules/unified-review.mdc` | 共享严重度分级、问题归类、报告口径 |
-| 自动化钩子 | `hooks/hooks.json` | 编辑文档后温和提醒可做同步检查(advisory，不阻断) |
+| 自动化钩子 | `hooks/hooks.json` | ①编辑文档后温和提醒;②**提交前阻断式审查门**:`git commit` 前若未完成审查或仍有 P0/P1 则拦截 |
 | 命令入口 | `commands/review.md` | `/review` 一键发起统一审查 |
 | 安装器 | `install.ps1` / `install.sh` | 一键部署到 Cursor 配置目录 |
 
@@ -71,7 +71,19 @@ chmod +x install.sh
 - **不物理合并技能**：内置子代理用"调度"而非"塞进一个文件"，避免破坏其能力，也符合
   Cursor "技能要专注"的建议。
 - **伞技能依赖整包**：只装伞技能不足以工作，必须随包安装文档审查技能与规则。
-- **自动化保守**：钩子仅做一行温和提醒，不在每次保存时强制跑全量审查。
+- **自动化分两档**：
+  - `afterFileEdit`：编辑文档后一行温和提醒(advisory，不阻断)。
+  - `beforeShellExecution`(matcher `git commit`)：**提交前阻断式审查门**。Agent 执行
+    `git commit` 时,若本会话未完成统一审查、或仍有未解决的 P0/P1 问题、或无法确认,则
+    **拦截提交**(`deny`)并要求先跑 `/review` 修复后再提交;不确定时默认拦截(刻意激进以防错)。
+
+### 关于阻断门的边界与调节
+
+- **拦截范围**:只拦截**经 Cursor Agent(Shell 工具)发起**的 `git commit`。在外部终端手动
+  提交不会被此钩子拦截 —— 这也是"必要时的逃生通道"。若需对所有提交硬性拦截(含手动),
+  应另配 git 原生 `pre-commit` 钩子(确定性脚本检查,如断链/JSON 校验/测试),可与本门叠加。
+- **调节强度**:把 `beforeShellExecution` 条目里提示要求的 `deny` 改为 `ask`(改为每次询问而非
+  直接拒绝),或删除该条目即可回到"仅温和提醒"。安装时加 `-SkipHooks` / `--skip-hooks` 可完全不装钩子。
 
 ## 致谢 / 来源
 

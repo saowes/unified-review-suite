@@ -55,10 +55,14 @@ if [[ "$SKIP_HOOKS" -eq 0 ]]; then
   elif command -v jq >/dev/null 2>&1; then
     BAK="$HOOK_DST.bak.$(date +%Y%m%d%H%M%S)"
     cp -f "$HOOK_DST" "$BAK"
-    jq -s '.[0] as $a | .[1] as $b
+    jq -s '
+      .[0] as $a | .[1] as $b
       | $a
-      | .hooks.afterFileEdit = (((.hooks.afterFileEdit // []) + ($b.hooks.afterFileEdit // []))
-          | unique_by(.prompt))' "$HOOK_DST" "$HOOK_SRC" > "$HOOK_DST.tmp" && mv "$HOOK_DST.tmp" "$HOOK_DST"
+      | .hooks = (
+          reduce ($b.hooks | keys[]) as $k
+            (($a.hooks // {});
+             .[$k] = (((.[$k] // []) + ($b.hooks[$k] // [])) | unique))
+        )' "$HOOK_DST" "$HOOK_SRC" > "$HOOK_DST.tmp" && mv "$HOOK_DST.tmp" "$HOOK_DST"
     echo "  hooks  -> merged into existing hooks.json (backup: $BAK)"
   else
     cp -f "$HOOK_SRC" "$HOOK_DST.unified-review-suite.json"

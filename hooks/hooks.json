@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "type": "prompt",
+        "prompt": "An edit just finished. If the edited file is documentation (e.g. .md) or a schema/enum/config/JSON that other docs or assets depend on, gently note that a sync check via the document-review-sync-check skill (L1 reference existence / L2 parameter consistency / L3 reverse propagation) may be warranted before treating the change as complete. This is advisory only: do NOT block, do NOT auto-run a full review, keep it to a one-line reminder. If the file is unrelated, stay silent. Hook input: $ARGUMENTS",
+        "matcher": "Write",
+        "timeout": 15
+      }
+    ]
+  }
+}
